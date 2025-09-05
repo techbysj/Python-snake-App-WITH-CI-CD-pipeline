@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
 # Use DynamoDB for cloud storage
-dynamodb = boto3.resource('dynamodb', region_name='eu-north-1')
+dynamodb = boto3.resource('dynamodb', region_name='eu-central-1')
 table = dynamodb.Table('addition-game-scores')
 
 class AdditionGameWeb:
@@ -109,6 +109,34 @@ def leaderboard():
         return jsonify(scores)
     except Exception as e:
         return jsonify([])
+    
+    @app.route('/create-table')
+def create_table():
+    try:
+        table = dynamodb.create_table(
+            TableName='addition-game-scores',
+            KeySchema=[
+                {
+                    'AttributeName': 'id',
+                    'KeyType': 'HASH'
+                }
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'id',
+                    'AttributeType': 'S'
+                }
+            ],
+            BillingMode='PAY_PER_REQUEST'
+        )
+        table.wait_until_exists()
+        return jsonify({'status': 'success', 'message': 'Table created successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=8000)
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
