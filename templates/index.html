@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Addition Speed Game</title>
+    <style>
+        body { font-family: Arial; text-align: center; padding: 50px; }
+        .game-area { max-width: 500px; margin: 0 auto; }
+        input, button { padding: 10px; margin: 10px; font-size: 18px; }
+        .question { font-size: 24px; margin: 20px; }
+        .timer { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="game-area">
+        <h1>🧮 Addition Speed Game</h1>
+        <div id="start-screen">
+            <input type="text" id="player-name" placeholder="Enter your name">
+            <button onclick="startGame()">Start Game</button>
+        </div>
+        <div id="game-screen" style="display:none;">
+            <div class="question" id="question"></div>
+            <div class="timer" id="timer">10</div>
+            <input type="number" id="answer" placeholder="Your answer">
+            <button onclick="submitAnswer()">Submit</button>
+        </div>
+        <div id="result-screen" style="display:none;">
+            <h2 id="final-score"></h2>
+            <div id="leaderboard"></div>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        let timer;
+        let timeLeft = 10;
+
+        function startGame() {
+            const name = document.getElementById('player-name').value;
+            if (!name) return alert('Please enter your name');
+            
+            fetch('/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name})
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'block';
+                showQuestion(data);
+            });
+        }
+
+        function showQuestion(data) {
+            document.getElementById('question').textContent = `Level ${data.level}: ${data.question} = ?`;
+            document.getElementById('answer').value = '';
+            document.getElementById('answer').focus();
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 10;
+            document.getElementById('timer').textContent = timeLeft;
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function submitAnswer() {
+            const answer = document.getElementById('answer').value;
+            if (!answer) return;
+            
+            clearInterval(timer);
+            fetch('/answer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({answer: parseInt(answer)})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.game_over) {
+                    endGame(data);
+                } else {
+                    fetch('/question').then(r => r.json()).then(showQuestion);
+                }
+            });
+        }
+
+        function endGame(data) {
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'block';
+            
+            if (data) {
+                document.getElementById('final-score').textContent = 
+                    `${data.message} Score: ${data.score} (${data.rating})`;
+            }
+            
+            fetch('/leaderboard').then(r => r.json()).then(scores => {
+                const lb = document.getElementById('leaderboard');
+                lb.innerHTML = '<h3>🏆 Leaderboard</h3>' + 
+                    scores.map((s, i) => `${i+1}. ${s.name}: ${s.score} (${s.rating})`).join('<br>');
+            });
+        }
+
+        document.getElementById('answer').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') submitAnswer();
+        });
+    </script>
+</body>
+</html>
