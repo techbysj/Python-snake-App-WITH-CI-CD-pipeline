@@ -110,7 +110,7 @@ def leaderboard():
     except Exception as e:
         return jsonify([])
     
-    @app.route('/create-table')
+@app.route('/create-table')
 def create_table():
     try:
         table = dynamodb.create_table(
@@ -137,6 +137,3 @@ def create_table():
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
 
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
