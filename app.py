@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
 # Use DynamoDB for cloud storage
-dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+dynamodb = boto3.resource('dynamodb', region_name='eu-north-1')
 table = dynamodb.Table('addition-game-scores')
 
 class AdditionGameWeb:
@@ -105,9 +105,9 @@ def end_game(message):
 def leaderboard():
     try:
         response = table.scan()
-        scores = sorted(response['Items'], key=lambda x: x['score'], reverse=True)[:10]
+        scores = sorted(response['Items'], key=lambda x: int(x['score']), reverse=True)[:3]
         return jsonify(scores)
-    except ClientError:
+    except Exception as e:
         return jsonify([])
 
 if __name__ == '__main__':
